@@ -22,6 +22,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "SRV_Channel.h"
 
+
 extern const AP_HAL::HAL& hal;
 
 SRV_Channel::servo_mask_t SRV_Channel::have_pwm_mask;
