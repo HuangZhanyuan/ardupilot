@@ -607,13 +607,14 @@ SRV_Channels &srv()
 
 
 
-// 定义GPIO引脚号（根据你的飞控版本修改）
+// 定义GPIO引脚号
 #ifndef PIN_S11_INPUT
-#define PIN_S11_INPUT 60    // V4版本S11=60, V3版本改为58
+#define PIN_S11_INPUT 60    // V4版本S11=60
 #endif
 
 #ifndef PIN_S7_OUTPUT
-#define PIN_S7_OUTPUT 56    // S7的GPIO编号
+#define PIN_S7_OUTPUT 6     // 注意：这里是通道号索引，不是GPIO编号！
+                            // S7在RCOutput中对应通道6（0=S1, 1=S2, ..., 6=S7）
 #endif
 
 #define PWM_VALUE_HIGH 2000
@@ -633,9 +634,7 @@ void SRV_Channels::set_pwm_from_gpio_input(void)
     // 根据电平决定PWM值
     uint16_t pwm_value = s11_high ? PWM_VALUE_HIGH : PWM_VALUE_LOW;
     
-    // 找到S7对应的通道（索引6 = 第7个通道，因为从0开始）
-    // 0=S1, 1=S2, 2=S3, 3=S4, 4=S5, 5=S6, 6=S7
-    if (6 < NUM_SERVO_CHANNELS) {
-        channels[6].set_output_pwm(pwm_value);
-    }
+    // 直接通过HAL输出PWM到S7通道
+    // 通道号：6 对应 S7（0=S1, 1=S2, 2=S3, 3=S4, 4=S5, 5=S6, 6=S7）
+    hal.rcout->write(6, pwm_value);
 }
