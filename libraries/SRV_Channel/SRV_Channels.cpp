@@ -26,6 +26,8 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_KDECAN/AP_KDECAN.h>
 
+#include <AP_HAL/GPIO.h>
+
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
   #include <AP_DroneCAN/AP_DroneCAN.h>
@@ -485,6 +487,9 @@ void SRV_Channels::cork()
  */
 void SRV_Channels::push()
 {
+    // 根据GPIO输入设置S7输出
+    set_pwm_from_gpio_input();
+
     hal.rcout->push();
 
 #if AP_VOLZ_ENABLED
@@ -599,3 +604,38 @@ SRV_Channels &srv()
 }
 
 };
+
+
+
+// 定义GPIO引脚号（根据你的飞控版本修改）
+#ifndef PIN_S11_INPUT
+#define PIN_S11_INPUT 60    // V4版本S11=60, V3版本改为58
+#endif
+
+#ifndef PIN_S7_OUTPUT
+#define PIN_S7_OUTPUT 56    // S7的GPIO编号
+#endif
+
+#define PWM_VALUE_HIGH 2000
+#define PWM_VALUE_LOW 1000
+
+void SRV_Channels::set_pwm_from_gpio_input(void)
+{
+    // 获取GPIO实例
+    AP_HAL::GPIO* gpio = hal.gpio;
+    if (gpio == nullptr) {
+        return;
+    }
+    
+    // 读取S11引脚电平
+    bool s11_high = gpio->read(PIN_S11_INPUT);
+    
+    // 根据电平决定PWM值
+    uint16_t pwm_value = s11_high ? PWM_VALUE_HIGH : PWM_VALUE_LOW;
+    
+    // 找到S7对应的通道（索引6 = 第7个通道，因为从0开始）
+    // 0=S1, 1=S2, 2=S3, 3=S4, 4=S5, 5=S6, 6=S7
+    if (6 < NUM_SERVO_CHANNELS) {
+        channels[6].set_output_pwm(pwm_value);
+    }
+}
