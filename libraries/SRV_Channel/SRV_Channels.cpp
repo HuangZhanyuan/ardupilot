@@ -373,14 +373,6 @@ void SRV_Channels::init(uint32_t motor_mask, AP_HAL::RCOutput::output_mode mode)
 #ifndef HAL_BUILD_AP_PERIPH
     hal.rcout->set_dshot_rate(_singleton->dshot_rate, AP::scheduler().get_loop_rate_hz());
 #endif
-
-    // 新增：强制启用S7通道（通道6）
-    // 这确保即使SERVO7_FUNCTION = -1，S7也能输出PWM
-    uint32_t current_mask = hal.rcout->get_enabled_mask();
-    if (!(current_mask & (1U << 6))) {
-        hal.rcout->set_channel_mask(current_mask | (1U << 6));
-    }
-
 }
 
 /*
