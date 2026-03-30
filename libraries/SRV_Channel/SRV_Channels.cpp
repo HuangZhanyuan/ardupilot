@@ -373,6 +373,14 @@ void SRV_Channels::init(uint32_t motor_mask, AP_HAL::RCOutput::output_mode mode)
 #ifndef HAL_BUILD_AP_PERIPH
     hal.rcout->set_dshot_rate(_singleton->dshot_rate, AP::scheduler().get_loop_rate_hz());
 #endif
+
+    // 新增：强制启用S7通道（通道6）
+    // 这确保即使SERVO7_FUNCTION = -1，S7也能输出PWM
+    uint32_t current_mask = hal.rcout->get_enabled_mask();
+    if (!(current_mask & (1U << 6))) {
+        hal.rcout->set_channel_mask(current_mask | (1U << 6));
+    }
+
 }
 
 /*
@@ -607,14 +615,13 @@ SRV_Channels &srv()
 
 
 
-// 定义GPIO引脚号
+// 定义GPIO引脚号（根据你的飞控版本修改）
 #ifndef PIN_S11_INPUT
-#define PIN_S11_INPUT 60    // V4版本S11=60
+#define PIN_S11_INPUT 60    // V4版本S11=60, V3版本改为58
 #endif
 
 #ifndef PIN_S7_OUTPUT
-#define PIN_S7_OUTPUT 6     // 注意：这里是通道号索引，不是GPIO编号！
-                            // S7在RCOutput中对应通道6（0=S1, 1=S2, ..., 6=S7）
+#define PIN_S7_OUTPUT 6     // 通道号：0=S1, 1=S2, ..., 6=S7
 #endif
 
 #define PWM_VALUE_HIGH 2000
@@ -634,7 +641,15 @@ void SRV_Channels::set_pwm_from_gpio_input(void)
     // 根据电平决定PWM值
     uint16_t pwm_value = s11_high ? PWM_VALUE_HIGH : PWM_VALUE_LOW;
     
-    // 直接通过HAL输出PWM到S7通道
-    // 通道号：6 对应 S7（0=S1, 1=S2, 2=S3, 3=S4, 4=S5, 5=S6, 6=S7）
+    // 关键：强制启用S7通道的输出
+    // 设置S7通道的PWM值
     hal.rcout->write(6, pwm_value);
+    
+    // 确保S7通道被启用输出
+    // 获取当前启用的通道掩码，添加S7通道后重新设置
+    uint32_t enabled_mask = hal.rcout->get_enabled_mask();
+    if (!(enabled_mask & (1U << 6))) {
+        // S7通道未启用，强制启用
+        hal.rcout->set_channel_mask(enabled_mask | (1U << 6));
+    }
 }
