@@ -1232,6 +1232,87 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("FS_EKF_FILT", 8, ParametersG2, fs_ekf_filt_hz, FS_EKF_FILT_DEFAULT),
 
+    // @Param: S7_HI_PWM
+    // @DisplayName: S11 high-level Servo7 PWM
+    // @Description: PWM value driven on Servo7 after the S11 input rises and stays high for S11_DELAY seconds.
+    // @Units: PWM
+    // @Range: 800 2200
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("S7_HI_PWM", 9, ParametersG2, s7_hi_pwm, 2000),
+
+    // @Param: S7_LO_PWM
+    // @DisplayName: S11 low-level Servo7 PWM
+    // @Description: PWM value driven on Servo7 immediately after the S11 input falls low.
+    // @Units: PWM
+    // @Range: 800 2200
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("S7_LO_PWM", 10, ParametersG2, s7_lo_pwm, 1000),
+
+    // @Param: S11_DELAY
+    // @DisplayName: S11 rising-edge delay
+    // @Description: Delay in seconds from the S11 input rising high to driving Servo7 high and requesting auto-arm.
+    // @Units: s
+    // @Range: 0 60
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("S11_DELAY", 11, ParametersG2, s11_delay, 2.0f),
+
+    // @Param: S8_HI_PWM
+    // @DisplayName: S11 high-level Servo8 PWM
+    // @Description: PWM value driven on Servo8 after the S11 input rises and stays high for S11_DELAY seconds.
+    // @Units: PWM
+    // @Range: 800 2200
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("S8_HI_PWM", 12, ParametersG2, s8_hi_pwm, 2000),
+
+    // @Param: S8_LO_PWM
+    // @DisplayName: S11 low-level Servo8 PWM
+    // @Description: PWM value driven on Servo8 immediately after the S11 input falls low.
+    // @Units: PWM
+    // @Range: 800 2200
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("S8_LO_PWM", 13, ParametersG2, s8_lo_pwm, 1000),
+
+    // @Param: S9_HI_PWM
+    // @DisplayName: S11 high-level Servo9 PWM
+    // @Description: PWM value driven on Servo9 after the S11 input rises and stays high for S11_DELAY seconds.
+    // @Units: PWM
+    // @Range: 800 2200
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("S9_HI_PWM", 14, ParametersG2, s9_hi_pwm, 2000),
+
+    // @Param: S9_LO_PWM
+    // @DisplayName: S11 low-level Servo9 PWM
+    // @Description: PWM value driven on Servo9 immediately after the S11 input falls low.
+    // @Units: PWM
+    // @Range: 800 2200
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("S9_LO_PWM", 15, ParametersG2, s9_lo_pwm, 1000),
+
+    // @Param: S10_HI_PWM
+    // @DisplayName: S11 high-level Servo10 PWM
+    // @Description: PWM value driven on Servo10 after the S11 input rises and stays high for S11_DELAY seconds.
+    // @Units: PWM
+    // @Range: 800 2200
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("S10_HI_PWM", 16, ParametersG2, s10_hi_pwm, 2000),
+
+    // @Param: S10_LO_PWM
+    // @DisplayName: S11 low-level Servo10 PWM
+    // @Description: PWM value driven on Servo10 immediately after the S11 input falls low.
+    // @Units: PWM
+    // @Range: 800 2200
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("S10_LO_PWM", 17, ParametersG2, s10_lo_pwm, 1000),
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND

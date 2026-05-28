@@ -676,6 +676,17 @@ public:
     // EKF variance filter cutoff
     AP_Float fs_ekf_filt_hz;
 
+    // S11 GPIO-triggered servo output parameters
+    AP_Int16 s7_hi_pwm;
+    AP_Int16 s7_lo_pwm;
+    AP_Int16 s8_hi_pwm;
+    AP_Int16 s8_lo_pwm;
+    AP_Int16 s9_hi_pwm;
+    AP_Int16 s9_lo_pwm;
+    AP_Int16 s10_hi_pwm;
+    AP_Int16 s10_lo_pwm;
+    AP_Float s11_delay;
+
 #if WEATHERVANE_ENABLED
     AC_WeatherVane weathervane;
 #endif

@@ -48,6 +48,10 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         passed = false;
     }
 
+    if (!s11_gpio_checks(display_failure)) {
+        passed = false;
+    }
+
     // always check motors
     char failure_msg[100] {};
     if (!copter.motors->arming_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
@@ -518,6 +522,30 @@ bool AP_Arming_Copter::gcs_failsafe_check(bool display_failure)
         return false;
     }
     return true;
+}
+
+bool AP_Arming_Copter::s11_gpio_checks(bool display_failure) const
+{
+    if (!copter.s11_auto.last_level_valid) {
+        check_failed(display_failure, "S11 trigger init");
+        return false;
+    }
+
+    if (copter.s11_auto.pending_rise) {
+        check_failed(display_failure, "S11 arm delay");
+        return false;
+    }
+
+    if (copter.s11_auto.arm_ready) {
+        return true;
+    }
+
+    if (copter.s11_auto.last_level_high) {
+        check_failed(display_failure, "S11 edge required");
+    } else {
+        check_failed(display_failure, "S11 trigger low");
+    }
+    return false;
 }
 
 // check winch

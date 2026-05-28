@@ -1,4 +1,5 @@
 #include "Copter.h"
+#include <AP_HAL/GPIO.h>
 
 #define ARM_DELAY               20  // called at 10hz so 2 seconds
 #define DISARM_DELAY            20  // called at 10hz so 2 seconds
@@ -6,6 +7,104 @@
 #define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
 
 static uint32_t auto_disarm_begin;
+
+bool Copter::read_s11_gpio(bool &high)
+{
+    AP_HAL::GPIO *gpio = hal.gpio;
+    if (gpio == nullptr) {
+        return false;
+    }
+
+    if (!s11_auto.gpio_initialised) {
+        gpio->pinMode(s11_input_pin, HAL_GPIO_INPUT);
+        s11_auto.gpio_initialised = true;
+    }
+
+    high = gpio->read(s11_input_pin);
+    return true;
+}
+
+void Copter::update_s11_auto()
+{
+    bool s11_high;
+    if (!read_s11_gpio(s11_high)) {
+        return;
+    }
+
+    const uint32_t now_ms = millis();
+
+    if (!s11_auto.last_level_valid) {
+        s11_auto.last_level_valid = true;
+        s11_auto.last_level_high = s11_high;
+        return;
+    }
+
+    if (s11_high != s11_auto.last_level_high) {
+        s11_auto.last_level_high = s11_high;
+
+        if (s11_high) {
+            s11_auto.pending_rise = true;
+            s11_auto.rise_start_ms = now_ms;
+        } else {
+            s11_auto.pending_rise = false;
+            s11_auto.arm_ready = false;
+            s11_auto.servo_output_valid = true;
+            s11_auto.servo_output_high = false;
+
+            if (motors->armed() && !arming.disarm(AP_Arming::Method::MAVLINK)) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "S11 low: disarm denied");
+            }
+        }
+    }
+
+    if (s11_auto.pending_rise && s11_auto.last_level_high) {
+        const float delay_s = MAX(g2.s11_delay.get(), 0.0f);
+        const uint32_t delay_ms = uint32_t(delay_s * 1000.0f);
+        if (now_ms - s11_auto.rise_start_ms >= delay_ms) {
+            s11_auto.pending_rise = false;
+            s11_auto.arm_ready = true;
+            s11_auto.servo_output_valid = true;
+            s11_auto.servo_output_high = true;
+
+            if (!motors->armed() && !arming.arm(AP_Arming::Method::AUXSWITCH)) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "S11 high: arm failed");
+            }
+        }
+    }
+}
+
+void Copter::apply_s11_servo_outputs()
+{
+    if (!s11_auto.servo_output_valid) {
+        return;
+    }
+
+    const uint8_t channels[] = {
+        s7_output_channel,
+        s8_output_channel,
+        s9_output_channel,
+        s10_output_channel
+    };
+    AP_Int16 *const hi_params[] = {
+        &g2.s7_hi_pwm,
+        &g2.s8_hi_pwm,
+        &g2.s9_hi_pwm,
+        &g2.s10_hi_pwm
+    };
+    AP_Int16 *const lo_params[] = {
+        &g2.s7_lo_pwm,
+        &g2.s8_lo_pwm,
+        &g2.s9_lo_pwm,
+        &g2.s10_lo_pwm
+    };
+
+    for (uint8_t i = 0; i < ARRAY_SIZE(channels); i++) {
+        const AP_Int16 *const pwm_param = s11_auto.servo_output_high ? hi_params[i] : lo_params[i];
+        const uint16_t pwm = uint16_t(constrain_int16(pwm_param->get(), 800, 2200));
+        hal.rcout->enable_ch(channels[i]);
+        hal.rcout->write(channels[i], pwm);
+    }
+}
 
 // arm_motors_check - checks for pilot input to arm or disarm the copter
 // called at 10hz
@@ -153,6 +252,8 @@ void Copter::motors_output()
         ap.in_arming_delay = false;
     }
 
+    update_s11_auto();
+
     // output any servo channels
     SRV_Channels::calc_pwm();
 
@@ -181,6 +282,8 @@ void Copter::motors_output()
         // send output signals to motors
         flightmode->output_to_motors();
     }
+
+    apply_s11_servo_outputs();
 
     // push all channels
     srv.push();

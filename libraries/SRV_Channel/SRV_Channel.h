@@ -364,7 +364,6 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    //GPIO控制PWM
     static void set_pwm_from_gpio_input(void);
 
     // set the default function for a channel

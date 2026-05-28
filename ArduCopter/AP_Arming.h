@@ -46,6 +46,7 @@ protected:
     bool oa_checks(bool display_failure);
     bool mandatory_gps_checks(bool display_failure);
     bool gcs_failsafe_check(bool display_failure);
+    bool s11_gpio_checks(bool display_failure) const;
     bool winch_checks(bool display_failure) const;
     bool alt_checks(bool display_failure);
     bool rc_throttle_failsafe_checks(bool display_failure) const;

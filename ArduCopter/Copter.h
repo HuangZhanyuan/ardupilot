@@ -592,6 +592,23 @@ private:
 
     bool standby_active;
 
+    static constexpr uint8_t s11_input_pin = 60;
+    static constexpr uint8_t s7_output_channel = 6;
+    static constexpr uint8_t s8_output_channel = 7;
+    static constexpr uint8_t s9_output_channel = 8;
+    static constexpr uint8_t s10_output_channel = 9;
+
+    struct {
+        bool gpio_initialised;
+        bool last_level_valid;
+        bool last_level_high;
+        bool pending_rise;
+        bool arm_ready;
+        bool servo_output_valid;
+        bool servo_output_high;
+        uint32_t rise_start_ms;
+    } s11_auto {};
+
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
@@ -919,6 +936,9 @@ private:
     // motors.cpp
     void arm_motors_check();
     void auto_disarm_check();
+    bool read_s11_gpio(bool &high);
+    void update_s11_auto();
+    void apply_s11_servo_outputs();
     void motors_output();
     void lost_vehicle_check();
 

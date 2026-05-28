@@ -26,8 +26,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_KDECAN/AP_KDECAN.h>
 
-#include <AP_HAL/GPIO.h>
-
 #if HAL_MAX_CAN_PROTOCOL_DRIVERS
   #include <AP_CANManager/AP_CANManager.h>
   #include <AP_DroneCAN/AP_DroneCAN.h>
@@ -487,9 +485,6 @@ void SRV_Channels::cork()
  */
 void SRV_Channels::push()
 {
-    // 根据GPIO输入设置S7输出
-    set_pwm_from_gpio_input();
-
     hal.rcout->push();
 
 #if AP_VOLZ_ENABLED
