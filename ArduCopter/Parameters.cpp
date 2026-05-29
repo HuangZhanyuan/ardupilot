@@ -1252,7 +1252,7 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
 
     // @Param: S11_DELAY
     // @DisplayName: S11 rising-edge delay
-    // @Description: Delay in seconds from the S11 input rising high to driving Servo7 high and requesting auto-arm.
+    // @Description: Delay in seconds from the S11 input rising high to driving Servo7-Servo9 high and requesting auto-arm.
     // @Units: s
     // @Range: 0 60
     // @Increment: 0.1
@@ -1295,23 +1295,49 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("S9_LO_PWM", 15, ParametersG2, s9_lo_pwm, 1000),
 
-    // @Param: S10_HI_PWM
-    // @DisplayName: S11 high-level Servo10 PWM
-    // @Description: PWM value driven on Servo10 after the S11 input rises and stays high for S11_DELAY seconds.
-    // @Units: PWM
-    // @Range: 800 2200
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("S10_HI_PWM", 16, ParametersG2, s10_hi_pwm, 2000),
+    // IDs 16 and 17 are reserved for the removed S10 S11-linked PWM parameters.
 
-    // @Param: S10_LO_PWM
-    // @DisplayName: S11 low-level Servo10 PWM
-    // @Description: PWM value driven on Servo10 immediately after the S11 input falls low.
-    // @Units: PWM
-    // @Range: 800 2200
-    // @Increment: 1
+    // @Param: S10_PTCH_TGT
+    // @DisplayName: Servo10 pitch target angle
+    // @Description: Target pitch angle in degrees for the Servo10 tracking controller.
+    // @Units: deg
+    // @Range: -90 90
+    // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("S10_LO_PWM", 17, ParametersG2, s10_lo_pwm, 1000),
+    AP_GROUPINFO("S10_PTCH_TGT", 18, ParametersG2, s10_pitch_target_deg, 45.0f),
+
+    // @Param: S10_PTCH_KP
+    // @DisplayName: Servo10 pitch tracking P gain
+    // @Description: Proportional gain applied to pitch angle error to generate Servo10 PWM correction.
+    // @Range: 0 100
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("S10_PTCH_KP", 19, ParametersG2, s10_pitch_kp, 5.0f),
+
+    // @Param: S10_PTCH_KI
+    // @DisplayName: Servo10 pitch tracking I gain
+    // @Description: Integral gain applied to pitch angle error to generate Servo10 PWM correction.
+    // @Range: 0 100
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("S10_PTCH_KI", 20, ParametersG2, s10_pitch_ki, 0.0f),
+
+    // @Param: S10_PTCH_KD
+    // @DisplayName: Servo10 pitch tracking D gain
+    // @Description: Derivative gain applied to pitch angle error to generate Servo10 PWM correction.
+    // @Range: 0 100
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("S10_PTCH_KD", 21, ParametersG2, s10_pitch_kd, 0.0f),
+
+    // @Param: S10_HOLD_S
+    // @DisplayName: Servo10 hold-off delay after S11 high
+    // @Description: Time in seconds that Servo10 pitch tracking continues after S11 changes from low to high before output returns to Servo10 trim.
+    // @Units: s
+    // @Range: 0 60
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("S10_HOLD_S", 22, ParametersG2, s10_hold_time_s, 3.0f),
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 

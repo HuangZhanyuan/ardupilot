@@ -683,9 +683,14 @@ public:
     AP_Int16 s8_lo_pwm;
     AP_Int16 s9_hi_pwm;
     AP_Int16 s9_lo_pwm;
-    AP_Int16 s10_hi_pwm;
-    AP_Int16 s10_lo_pwm;
     AP_Float s11_delay;
+
+    // S10 pitch tracking parameters
+    AP_Float s10_pitch_target_deg;
+    AP_Float s10_pitch_kp;
+    AP_Float s10_pitch_ki;
+    AP_Float s10_pitch_kd;
+    AP_Float s10_hold_time_s;
 
 #if WEATHERVANE_ENABLED
     AC_WeatherVane weathervane;

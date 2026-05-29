@@ -45,6 +45,8 @@ void Copter::update_s11_auto()
         if (s11_high) {
             s11_auto.pending_rise = true;
             s11_auto.rise_start_ms = now_ms;
+            s10_pitch_track.high_transition_valid = true;
+            s10_pitch_track.high_transition_ms = now_ms;
         } else {
             s11_auto.pending_rise = false;
             s11_auto.arm_ready = false;
@@ -82,20 +84,17 @@ void Copter::apply_s11_servo_outputs()
     const uint8_t channels[] = {
         s7_output_channel,
         s8_output_channel,
-        s9_output_channel,
-        s10_output_channel
+        s9_output_channel
     };
     AP_Int16 *const hi_params[] = {
         &g2.s7_hi_pwm,
         &g2.s8_hi_pwm,
-        &g2.s9_hi_pwm,
-        &g2.s10_hi_pwm
+        &g2.s9_hi_pwm
     };
     AP_Int16 *const lo_params[] = {
         &g2.s7_lo_pwm,
         &g2.s8_lo_pwm,
-        &g2.s9_lo_pwm,
-        &g2.s10_lo_pwm
+        &g2.s9_lo_pwm
     };
 
     for (uint8_t i = 0; i < ARRAY_SIZE(channels); i++) {
@@ -104,6 +103,83 @@ void Copter::apply_s11_servo_outputs()
         hal.rcout->enable_ch(channels[i]);
         hal.rcout->write(channels[i], pwm);
     }
+}
+
+bool Copter::s10_pitch_tracking_active(uint32_t now_ms) const
+{
+    if (!s11_auto.last_level_valid) {
+        return false;
+    }
+
+    if (!s11_auto.last_level_high) {
+        return true;
+    }
+
+    if (!s10_pitch_track.high_transition_valid) {
+        return false;
+    }
+
+    const float hold_time_s = MAX(g2.s10_hold_time_s.get(), 0.0f);
+    const uint32_t hold_time_ms = uint32_t(hold_time_s * 1000.0f);
+    return now_ms - s10_pitch_track.high_transition_ms < hold_time_ms;
+}
+
+void Copter::reset_s10_pitch_tracking_controller()
+{
+    s10_pitch_track.integrator_pwm = 0.0f;
+    s10_pitch_track.last_error_deg = 0.0f;
+    s10_pitch_track.last_error_valid = false;
+}
+
+void Copter::apply_s10_pitch_tracking_output()
+{
+    SRV_Channel *const s10_channel = SRV_Channels::srv_channel(s10_output_channel);
+    if (s10_channel == nullptr) {
+        return;
+    }
+
+    const uint16_t trim_pwm = s10_channel->get_trim();
+    const uint16_t min_pwm = s10_channel->get_output_min();
+    const uint16_t max_pwm = s10_channel->get_output_max();
+    const uint32_t now_ms = millis();
+    const bool controller_active = s10_pitch_tracking_active(now_ms);
+
+    if (controller_active != s10_pitch_track.controller_was_active) {
+        reset_s10_pitch_tracking_controller();
+        s10_pitch_track.controller_was_active = controller_active;
+    }
+
+    uint16_t pwm = trim_pwm;
+
+    if (controller_active) {
+        const float dt = constrain_float(G_Dt, 0.0f, 0.5f);
+        const float pitch_deg = degrees(ahrs.get_pitch());
+        const float error_deg = g2.s10_pitch_target_deg.get() - pitch_deg;
+        const float p_out = g2.s10_pitch_kp.get() * error_deg;
+        const float positive_headroom = float(max_pwm) - float(trim_pwm);
+        const float negative_headroom = float(trim_pwm) - float(min_pwm);
+
+        if (dt > 0.0f) {
+            s10_pitch_track.integrator_pwm += g2.s10_pitch_ki.get() * error_deg * dt;
+            s10_pitch_track.integrator_pwm = constrain_float(s10_pitch_track.integrator_pwm,
+                                                             -negative_headroom,
+                                                             positive_headroom);
+        }
+
+        float d_out = 0.0f;
+        if (s10_pitch_track.last_error_valid && dt > 0.0f) {
+            d_out = g2.s10_pitch_kd.get() * (error_deg - s10_pitch_track.last_error_deg) / dt;
+        }
+
+        s10_pitch_track.last_error_deg = error_deg;
+        s10_pitch_track.last_error_valid = true;
+
+        const float output_pwm = float(trim_pwm) + p_out + s10_pitch_track.integrator_pwm + d_out;
+        pwm = uint16_t(constrain_float(output_pwm, min_pwm, max_pwm));
+    }
+
+    hal.rcout->enable_ch(s10_output_channel);
+    hal.rcout->write(s10_output_channel, pwm);
 }
 
 // arm_motors_check - checks for pilot input to arm or disarm the copter
@@ -284,6 +360,7 @@ void Copter::motors_output()
     }
 
     apply_s11_servo_outputs();
+    apply_s10_pitch_tracking_output();
 
     // push all channels
     srv.push();

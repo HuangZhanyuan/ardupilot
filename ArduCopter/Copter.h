@@ -609,6 +609,15 @@ private:
         uint32_t rise_start_ms;
     } s11_auto {};
 
+    struct {
+        bool high_transition_valid;
+        bool controller_was_active;
+        bool last_error_valid;
+        uint32_t high_transition_ms;
+        float integrator_pwm;
+        float last_error_deg;
+    } s10_pitch_track {};
+
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
@@ -939,6 +948,9 @@ private:
     bool read_s11_gpio(bool &high);
     void update_s11_auto();
     void apply_s11_servo_outputs();
+    bool s10_pitch_tracking_active(uint32_t now_ms) const;
+    void reset_s10_pitch_tracking_controller();
+    void apply_s10_pitch_tracking_output();
     void motors_output();
     void lost_vehicle_check();
 
