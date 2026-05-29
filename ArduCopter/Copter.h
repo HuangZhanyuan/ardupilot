@@ -950,6 +950,7 @@ private:
     void apply_s11_servo_outputs();
     bool s10_pitch_tracking_active(uint32_t now_ms) const;
     void reset_s10_pitch_tracking_controller();
+    float get_s10_wrapped_pitch_deg() const;
     void apply_s10_pitch_tracking_output();
     void motors_output();
     void lost_vehicle_check();

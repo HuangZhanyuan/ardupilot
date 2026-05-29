@@ -131,6 +131,14 @@ void Copter::reset_s10_pitch_tracking_controller()
     s10_pitch_track.last_error_valid = false;
 }
 
+float Copter::get_s10_wrapped_pitch_deg() const
+{
+    const Matrix3f &rot = ahrs.get_rotation_body_to_ned();
+    // Use the 3-1-2 decomposition pitch term so the commanded pitch can
+    // continue past 90 degrees without the standard Euler pitch folding back.
+    return wrap_360(degrees(rot.to_euler312().y));
+}
+
 void Copter::apply_s10_pitch_tracking_output()
 {
     SRV_Channel *const s10_channel = SRV_Channels::srv_channel(s10_output_channel);
@@ -150,11 +158,17 @@ void Copter::apply_s10_pitch_tracking_output()
     }
 
     uint16_t pwm = trim_pwm;
+    const float dt = constrain_float(G_Dt, 0.0f, 0.5f);
+    const float pitch_wrapped_deg = get_s10_wrapped_pitch_deg();
 
     if (controller_active) {
-        const float dt = constrain_float(G_Dt, 0.0f, 0.5f);
-        const float pitch_deg = degrees(ahrs.get_pitch());
-        const float error_deg = g2.s10_pitch_target_deg.get() - pitch_deg;
+        const float target_wrapped_deg = wrap_360(g2.s10_pitch_target_deg.get());
+        float error_deg = pitch_wrapped_deg - target_wrapped_deg;
+        if (error_deg > 180.0f) {
+            error_deg -= 360.0f;
+        } else if (error_deg < -180.0f) {
+            error_deg += 360.0f;
+        }
         const float p_out = g2.s10_pitch_kp.get() * error_deg;
         const float positive_headroom = float(max_pwm) - float(trim_pwm);
         const float negative_headroom = float(trim_pwm) - float(min_pwm);
