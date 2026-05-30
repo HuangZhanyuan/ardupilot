@@ -618,6 +618,15 @@ private:
         float last_error_deg;
     } s10_pitch_track {};
 
+    struct {
+        bool high_transition_valid;
+        bool controller_was_active;
+        bool last_error_valid;
+        uint32_t high_transition_ms;
+        float integrator_pwm;
+        float last_error_deg;
+    } s9_roll_track {};
+
     static const AP_Scheduler::Task scheduler_tasks[];
     static const AP_Param::Info var_info[];
     static const struct LogStructure log_structure[];
@@ -952,6 +961,10 @@ private:
     void reset_s10_pitch_tracking_controller();
     float get_s10_wrapped_pitch_deg() const;
     void apply_s10_pitch_tracking_output();
+    bool s9_roll_tracking_active(uint32_t now_ms) const;
+    void reset_s9_roll_tracking_controller();
+    float get_s9_wrapped_roll_deg() const;
+    void apply_s9_roll_tracking_output();
     void motors_output();
     void lost_vehicle_check();
 

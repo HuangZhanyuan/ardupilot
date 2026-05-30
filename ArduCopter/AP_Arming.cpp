@@ -21,65 +21,7 @@ bool AP_Arming_Copter::run_pre_arm_checks(bool display_failure)
         return true;
     }
 
-    if (!hal.scheduler->is_system_initialized()) {
-        check_failed(display_failure, "System not initialised");
-        return false;
-    }
-
-    // check if motor interlock and either Emergency Stop aux switches are used
-    // at the same time.  This cannot be allowed.
-    bool passed = true;
-    if (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_INTERLOCK) &&
-        (rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_ESTOP) || 
-        rc().find_channel_for_option(RC_Channel::AUX_FUNC::ARM_EMERGENCY_STOP))){
-        check_failed(display_failure, "Interlock/E-Stop Conflict");
-        passed = false;
-    }
-
-    // check if motor interlock aux switch is in use
-    // if it is, switch needs to be in disabled position to arm
-    // otherwise exit immediately.
-    if (copter.ap.using_interlock && copter.ap.motor_interlock_switch) {
-        check_failed(display_failure, "Motor Interlock Enabled");
-        passed = false;
-    }
-
-    if (!disarm_switch_checks(display_failure)) {
-        passed = false;
-    }
-
-    if (!s11_gpio_checks(display_failure)) {
-        passed = false;
-    }
-
-    // always check motors
-    char failure_msg[100] {};
-    if (!copter.motors->arming_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
-        check_failed(display_failure, "Motors: %s", failure_msg);
-        passed = false;
-    }
-
-    // If not passed all checks return false
-    if (!passed) {
-        return false;
-    }
-
-    // if pre arm checks are disabled run only the mandatory checks
-    if (checks_to_perform == 0) {
-        return mandatory_checks(display_failure);
-    }
-
-    // bitwise & ensures all checks are run
-    return parameter_checks(display_failure)
-        & oa_checks(display_failure)
-        & gcs_failsafe_check(display_failure)
-        & winch_checks(display_failure)
-        & rc_throttle_failsafe_checks(display_failure)
-        & alt_checks(display_failure)
-#if AP_AIRSPEED_ENABLED
-        & AP_Arming::airspeed_checks(display_failure)
-#endif
-        & AP_Arming::pre_arm_checks(display_failure);
+    return s11_gpio_checks(display_failure);
 }
 
 bool AP_Arming_Copter::rc_throttle_failsafe_checks(bool display_failure) const
@@ -545,6 +487,7 @@ bool AP_Arming_Copter::s11_gpio_checks(bool display_failure) const
     } else {
         check_failed(display_failure, "S11 trigger low");
     }
+
     return false;
 }
 
@@ -587,104 +530,13 @@ bool AP_Arming_Copter::alt_checks(bool display_failure)
 //  has side-effect that logging is started
 bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
 {
-    const auto &ahrs = AP::ahrs();
-
-    // always check if inertial nav has started and is ready
-    if (!ahrs.healthy()) {
-        check_failed(true, "AHRS not healthy");
-        return false;
-    }
-
-#ifndef ALLOW_ARM_NO_COMPASS
-    // if non-compass is source of heading we can skip compass health check
-    if (!ahrs.using_noncompass_for_yaw()) {
-        const Compass &_compass = AP::compass();
-        // check compass health
-        if (!_compass.healthy()) {
-            check_failed(true, "Compass not healthy");
-            return false;
-        }
-    }
-#endif
-
-    // always check if the current mode allows arming
-    if (!copter.flightmode->allows_arming(method)) {
-        check_failed(true, "%s mode not armable", copter.flightmode->name());
-        return false;
-    }
-
-    // succeed if arming checks are disabled
-    if (checks_to_perform == 0) {
-        return true;
-    }
-
-    // check lean angle
-    if (check_enabled(ARMING_CHECK_INS)) {
-        if (degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()))*100.0f > copter.aparm.angle_max) {
-            check_failed(ARMING_CHECK_INS, true, "Leaning");
-            return false;
-        }
-    }
-
-    // check adsb
-#if HAL_ADSB_ENABLED
-    if (check_enabled(ARMING_CHECK_PARAMETERS)) {
-        if (copter.failsafe.adsb) {
-            check_failed(ARMING_CHECK_PARAMETERS, true, "ADSB threat detected");
-            return false;
-        }
-    }
-#endif
-
-    // check throttle
-    if (check_enabled(ARMING_CHECK_RC)) {
-#if FRAME_CONFIG == HELI_FRAME
-        const char *rc_item = "Collective";
-#else
-        const char *rc_item = "Throttle";
-#endif
-        // check throttle is not too high - skips checks if arming from GCS/scripting in Guided,Guided_NoGPS or Auto 
-        if (!((AP_Arming::method_is_GCS(method) || method == AP_Arming::Method::SCRIPTING) && copter.flightmode->allows_GCS_or_SCR_arming_with_throttle_high())) {
-            // above top of deadband is too always high
-            if (copter.get_pilot_desired_climb_rate(copter.channel_throttle->get_control_in()) > 0.0f) {
-                check_failed(ARMING_CHECK_RC, true, "%s too high", rc_item);
-                return false;
-            }
-            // in manual modes throttle must be at zero
-#if FRAME_CONFIG != HELI_FRAME
-            if ((copter.flightmode->has_manual_throttle() || copter.flightmode->mode_number() == Mode::Number::DRIFT) && copter.channel_throttle->get_control_in() > 0) {
-                check_failed(ARMING_CHECK_RC, true, "%s too high", rc_item);
-                return false;
-            }
-#endif
-        }
-    }
-
-    // check if safety switch has been pushed
-    if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        check_failed(true, "Safety Switch");
-        return false;
-    }
-
-    // superclass method should always be the last thing called; it
-    // has side-effects which would need to be cleaned up if one of
-    // our arm checks failed
-    return AP_Arming::arm_checks(method);
+    return s11_gpio_checks(true);
 }
 
 // mandatory checks that will be run if ARMING_CHECK is zero or arming forced
 bool AP_Arming_Copter::mandatory_checks(bool display_failure)
 {
-    // call mandatory gps checks and update notify status because regular gps checks will not run
-    bool result = mandatory_gps_checks(display_failure);
-    AP_Notify::flags.pre_arm_gps_check = result;
-
-    // call mandatory alt check
-    if (!alt_checks(display_failure)) {
-        result = false;
-    }
-
-    return result & AP_Arming::mandatory_checks(display_failure);
+    return s11_gpio_checks(display_failure);
 }
 
 void AP_Arming_Copter::set_pre_arm_check(bool b)

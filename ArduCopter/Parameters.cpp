@@ -1252,7 +1252,7 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
 
     // @Param: S11_DELAY
     // @DisplayName: S11 rising-edge delay
-    // @Description: Delay in seconds from the S11 input rising high to driving Servo7-Servo9 high and requesting auto-arm.
+    // @Description: Delay in seconds from the S11 input rising high to driving Servo7-Servo8 high and requesting auto-arm.
     // @Units: s
     // @Range: 0 60
     // @Increment: 0.1
@@ -1277,24 +1277,7 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @User: Standard
     AP_GROUPINFO("S8_LO_PWM", 13, ParametersG2, s8_lo_pwm, 1000),
 
-    // @Param: S9_HI_PWM
-    // @DisplayName: S11 high-level Servo9 PWM
-    // @Description: PWM value driven on Servo9 after the S11 input rises and stays high for S11_DELAY seconds.
-    // @Units: PWM
-    // @Range: 800 2200
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("S9_HI_PWM", 14, ParametersG2, s9_hi_pwm, 2000),
-
-    // @Param: S9_LO_PWM
-    // @DisplayName: S11 low-level Servo9 PWM
-    // @Description: PWM value driven on Servo9 immediately after the S11 input falls low.
-    // @Units: PWM
-    // @Range: 800 2200
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("S9_LO_PWM", 15, ParametersG2, s9_lo_pwm, 1000),
-
+    // IDs 14 and 15 are reserved for the removed S9 S11-linked PWM parameters.
     // IDs 16 and 17 are reserved for the removed S10 S11-linked PWM parameters.
 
     // @Param: S10_PTCH_TGT
@@ -1338,6 +1321,48 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("S10_HOLD_S", 22, ParametersG2, s10_hold_time_s, 3.0f),
+
+    // @Param: S9_ROLL_TGT
+    // @DisplayName: Servo9 roll target angle
+    // @Description: Target roll angle in degrees for the Servo9 tracking controller.
+    // @Units: deg
+    // @Range: -180 180
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("S9_ROLL_TGT", 23, ParametersG2, s9_roll_target_deg, 0.0f),
+
+    // @Param: S9_ROLL_KP
+    // @DisplayName: Servo9 roll tracking P gain
+    // @Description: Proportional gain applied to roll angle error to generate Servo9 PWM correction.
+    // @Range: 0 100
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("S9_ROLL_KP", 24, ParametersG2, s9_roll_kp, 5.0f),
+
+    // @Param: S9_ROLL_KI
+    // @DisplayName: Servo9 roll tracking I gain
+    // @Description: Integral gain applied to roll angle error to generate Servo9 PWM correction.
+    // @Range: 0 100
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("S9_ROLL_KI", 25, ParametersG2, s9_roll_ki, 0.0f),
+
+    // @Param: S9_ROLL_KD
+    // @DisplayName: Servo9 roll tracking D gain
+    // @Description: Derivative gain applied to roll angle error to generate Servo9 PWM correction.
+    // @Range: 0 100
+    // @Increment: 0.01
+    // @User: Standard
+    AP_GROUPINFO("S9_ROLL_KD", 26, ParametersG2, s9_roll_kd, 0.0f),
+
+    // @Param: S9_HOLD_S
+    // @DisplayName: Servo9 hold-off delay after S11 high
+    // @Description: Time in seconds that Servo9 roll tracking continues after S11 changes from low to high before output returns to Servo9 trim.
+    // @Units: s
+    // @Range: 0 60
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("S9_HOLD_S", 27, ParametersG2, s9_hold_time_s, 3.0f),
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
