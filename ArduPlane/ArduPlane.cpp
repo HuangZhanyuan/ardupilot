@@ -836,7 +836,7 @@ float Plane::tecs_hgt_afe(void)
 bool Plane::get_wp_distance_m(float &distance) const
 {
     // see GCS_MAVLINK_Plane::send_nav_controller_output()
-    if (control_mode == &mode_manual) {
+    if (control_mode == &mode_manual || control_mode == &mode_roll_pid) {
         return false;
     }
 #if HAL_QUADPLANE_ENABLED
@@ -852,7 +852,7 @@ bool Plane::get_wp_distance_m(float &distance) const
 bool Plane::get_wp_bearing_deg(float &bearing) const
 {
     // see GCS_MAVLINK_Plane::send_nav_controller_output()
-    if (control_mode == &mode_manual) {
+    if (control_mode == &mode_manual || control_mode == &mode_roll_pid) {
         return false;
     }
 #if HAL_QUADPLANE_ENABLED
@@ -868,7 +868,7 @@ bool Plane::get_wp_bearing_deg(float &bearing) const
 bool Plane::get_wp_crosstrack_error_m(float &xtrack_error) const
 {
     // see GCS_MAVLINK_Plane::send_nav_controller_output()
-    if (control_mode == &mode_manual) {
+    if (control_mode == &mode_manual || control_mode == &mode_roll_pid) {
         return false;
     }
 #if HAL_QUADPLANE_ENABLED

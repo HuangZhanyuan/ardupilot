@@ -580,6 +580,13 @@ public:
     
     AP_Int8         axis_bitmask; // axes to be autotuned
 
+    AP_Float        roll_tgt;
+    AP_Float        roll_p;
+    AP_Float        roll_i;
+    AP_Float        roll_d;
+    AP_Int16        surf1_mid;
+    AP_Int16        surf2_mid;
+
     // just to make compilation easier when all things are compiled out...
     uint8_t unused_integer;
 

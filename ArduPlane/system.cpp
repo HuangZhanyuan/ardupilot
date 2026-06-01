@@ -209,6 +209,7 @@ bool Plane::gcs_mode_enabled(const Mode::Number mode_num) const
         (uint8_t)Mode::Number::ACRO,
         (uint8_t)Mode::Number::FLY_BY_WIRE_A,
         (uint8_t)Mode::Number::FLY_BY_WIRE_B,
+        (uint8_t)Mode::Number::ROLL_PID,
         (uint8_t)Mode::Number::CRUISE,
         (uint8_t)Mode::Number::AUTOTUNE,
         (uint8_t)Mode::Number::AUTO,

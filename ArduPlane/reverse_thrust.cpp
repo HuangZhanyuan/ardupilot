@@ -97,6 +97,7 @@ bool Plane::allow_reverse_thrust(void) const
         allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_ACRO);
         break;
     case Mode::Number::STABILIZE:
+    case Mode::Number::ROLL_PID:
         allow |= (g.use_reverse_thrust & USE_REVERSE_THRUST_STABILIZE);
         break;
     case Mode::Number::THERMAL:

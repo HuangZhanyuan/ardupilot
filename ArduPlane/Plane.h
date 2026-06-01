@@ -154,6 +154,7 @@ public:
     friend class ModeAcro;
     friend class ModeFBWA;
     friend class ModeFBWB;
+    friend class ModeRollPID;
     friend class ModeCruise;
     friend class ModeAutoTune;
     friend class ModeAuto;
@@ -307,6 +308,7 @@ private:
     ModeAcro mode_acro;
     ModeFBWA mode_fbwa;
     ModeFBWB mode_fbwb;
+    ModeRollPID mode_roll_pid;
     ModeCruise mode_cruise;
     ModeAutoTune mode_autotune;
     ModeAuto mode_auto;

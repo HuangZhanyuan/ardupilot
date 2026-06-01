@@ -1019,6 +1019,10 @@ void Plane::servos_output(void)
         SRV_Channels::copy_radio_in_out_mask(uint32_t(g2.manual_rc_mask.get()));
     }
 
+    if (control_mode == &mode_roll_pid) {
+        mode_roll_pid.apply_servo_outputs();
+    }
+
     SRV_Channels::calc_pwm();
 
     SRV_Channels::output_ch_all();

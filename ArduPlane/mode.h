@@ -62,6 +62,7 @@ public:
 #if HAL_QUADPLANE_ENABLED
         LOITER_ALT_QLAND = 25,
 #endif
+        ROLL_PID      = 26,
     };
 
     // Constructor
@@ -572,6 +573,38 @@ public:
 protected:
 
     bool _enter() override;
+};
+
+class ModeRollPID : public Mode
+{
+public:
+
+    Number mode_number() const override { return Number::ROLL_PID; }
+    const char *name() const override { return "ROLL_PID"; }
+    const char *name4() const override { return "RLPD"; }
+
+    void update() override;
+    void run() override;
+
+    bool use_throttle_limits() const override;
+    bool use_battery_compensation() const override { return false; }
+
+    void apply_servo_outputs() const;
+
+protected:
+
+    bool _enter() override;
+
+private:
+
+    void update_pid();
+    void reset_pid();
+
+    float integrator_deg_s;
+    float last_error_deg;
+    bool have_last_error;
+    uint16_t surface1_pwm;
+    uint16_t surface2_pwm;
 };
 
 class ModeCruise : public Mode
