@@ -40,119 +40,34 @@ bool AP_Arming_Plane::terrain_database_required() const
     return AP_Arming::terrain_database_required();
 }
 
+bool AP_Arming_Plane::roll_pid_gpio_arm_check(bool display_failure)
+{
+    if (!plane.roll_pid_gpio_setup()) {
+        check_failed(display_failure, "S9 GPIO unavailable");
+        return false;
+    }
+    if (!plane.roll_pid_gpio_high()) {
+        check_failed(display_failure, "S9 must be high");
+        return false;
+    }
+    return true;
+}
+
 /*
   additional arming checks for plane
 
  */
 bool AP_Arming_Plane::pre_arm_checks(bool display_failure)
 {
-    if (armed || require == (uint8_t)Required::NO) {
-        // if we are already armed or don't need any arming checks
-        // then skip the checks
+    if (armed) {
         return true;
     }
-    if (!hal.scheduler->is_system_initialized()) {
-        check_failed(display_failure, "System not initialised");
-        return false;
-    }
-    //are arming checks disabled?
-    if (checks_to_perform == 0) {
-        return mandatory_checks(display_failure);
-    }
-    if (hal.util->was_watchdog_armed()) {
-        // on watchdog reset bypass arming checks to allow for
-        // in-flight arming if we were armed before the reset. This
-        // allows a reset on a BVLOS flight to return home if the
-        // operator can command arming over telemetry
-        return true;
-    }
-
-    // call parent class checks
-    bool ret = AP_Arming::pre_arm_checks(display_failure);
-
-#if AP_AIRSPEED_ENABLED
-    // Check airspeed sensor
-    ret &= AP_Arming::airspeed_checks(display_failure);
-#endif
-
-    if (plane.g.fs_timeout_long < plane.g.fs_timeout_short && plane.g.fs_action_short != FS_ACTION_SHORT_DISABLED) {
-        check_failed(display_failure, "FS_LONG_TIMEOUT < FS_SHORT_TIMEOUT");
-        ret = false;
-    }
-
-    if (plane.aparm.roll_limit < 3) {
-        check_failed(display_failure, "ROLL_LIMIT_DEG too small (%.1f)", plane.aparm.roll_limit.get());
-        ret = false;
-    }
-
-    if (plane.aparm.pitch_limit_max < 3) {
-        check_failed(display_failure, "PTCH_LIM_MAX_DEG too small (%.1f)", plane.aparm.pitch_limit_max.get());
-        ret = false;
-    }
-
-    if (plane.aparm.pitch_limit_min > -3) {
-        check_failed(display_failure, "PTCH_LIM_MIN_DEG too large (%.1f)", plane.aparm.pitch_limit_min.get());
-        ret = false;
-    }
-
-    if (plane.aparm.airspeed_min < MIN_AIRSPEED_MIN) {
-        check_failed(display_failure, "AIRSPEED_MIN too low (%i < %i)", plane.aparm.airspeed_min.get(), MIN_AIRSPEED_MIN);
-        ret = false;
-    }
-
-    if (plane.channel_throttle->get_reverse() && 
-        Plane::ThrFailsafe(plane.g.throttle_fs_enabled.get()) != Plane::ThrFailsafe::Disabled &&
-        plane.g.throttle_fs_value < 
-        plane.channel_throttle->get_radio_max()) {
-        check_failed(display_failure, "Invalid THR_FS_VALUE for rev throttle");
-        ret = false;
-    }
-
-    ret &= rc_received_if_enabled_check(display_failure);
-
-#if HAL_QUADPLANE_ENABLED
-    ret &= quadplane_checks(display_failure);
-#endif
-
-    // check adsb avoidance failsafe
-    if (plane.failsafe.adsb) {
-        check_failed(display_failure, "ADSB threat detected");
-        ret = false;
-    }
-
-    if (plane.flight_option_enabled(FlightOptions::CENTER_THROTTLE_TRIM)){
-       int16_t trim = plane.channel_throttle->get_radio_trim();
-       if (trim < 1250 || trim > 1750) {
-           check_failed(display_failure, "Throttle trim not near center stick(%u)",trim );
-           ret = false;
-       }
-    }
-
-    if (plane.mission.get_in_landing_sequence_flag() &&
-        !plane.mission.starts_with_takeoff_cmd()) {
-        check_failed(display_failure,"In landing sequence");
-        ret = false;
-    }
-
-    char failure_msg[50] {};
-    if (!plane.control_mode->pre_arm_checks(ARRAY_SIZE(failure_msg), failure_msg)) {
-        check_failed(display_failure, "%s %s", plane.control_mode->name(), failure_msg);
-        return false;
-    }
-
-    return ret;
+    return roll_pid_gpio_arm_check(display_failure);
 }
 
 bool AP_Arming_Plane::mandatory_checks(bool display_failure)
 {
-    bool ret = true;
-
-    ret &= rc_received_if_enabled_check(display_failure);
-
-    // Call parent class checks
-    ret &= AP_Arming::mandatory_checks(display_failure);
-
-    return ret;
+    return roll_pid_gpio_arm_check(display_failure);
 }
 
 
@@ -254,41 +169,8 @@ bool AP_Arming_Plane::ins_checks(bool display_failure)
 
 bool AP_Arming_Plane::arm_checks(AP_Arming::Method method)
 {
-    if (method == AP_Arming::Method::RUDDER) {
-        const AP_Arming::RudderArming arming_rudder = get_rudder_arming_type();
-
-        if (arming_rudder == AP_Arming::RudderArming::IS_DISABLED) {
-            //parameter disallows rudder arming/disabling
-
-            // if we emit a message here then someone doing surface
-            // checks may be bothered by the message being emitted.
-            // check_failed(true, "Rudder arming disabled");
-            return false;
-        }
-
-        // if throttle is not down, then pilot cannot rudder arm/disarm
-        if (!is_zero(plane.get_throttle_input())){
-            check_failed(true, "Non-zero throttle");
-            return false;
-        }
-    }
-
-    //are arming checks disabled?
-    if (checks_to_perform == 0) {
-        return true;
-    }
-
-    if (hal.util->was_watchdog_armed()) {
-        // on watchdog reset bypass arming checks to allow for
-        // in-flight arming if we were armed before the reset. This
-        // allows a reset on a BVLOS flight to return home if the
-        // operator can command arming over telemetry
-        gcs().send_text(MAV_SEVERITY_WARNING, "watchdog: Bypassing arming checks");
-        return true;
-    }
-
-    // call parent class checks
-    return AP_Arming::arm_checks(method);
+    (void)method;
+    return roll_pid_gpio_arm_check(true);
 }
 
 /*

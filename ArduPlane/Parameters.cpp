@@ -1347,6 +1347,15 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("SURF2_MID", 44, ParametersG2, surf2_mid, 1500),
+
+    // @Param: RPID_AUTO_DLY
+    // @DisplayName: ROLL_PID auto mode delay
+    // @Description: Delay after SERVO9 GPIO input changes from low to high before switching from ROLL_PID control to AUTO mode.
+    // @Units: s
+    // @Range: 0 60
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("RPID_AUTO_DLY", 45, ParametersG2, roll_pid_auto_delay, 2.0f),
     
     AP_GROUPEND
 };

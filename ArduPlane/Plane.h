@@ -359,6 +359,13 @@ private:
     // last time we ran roll/pitch stabilization
     uint32_t last_stabilize_ms;
 
+    struct {
+        bool initialized;
+        bool last_high;
+        bool auto_pending;
+        uint32_t high_start_ms;
+    } roll_pid_gpio;
+
     // Failsafe
     struct {
         // Used to track if the value on channel 3 (throttle) has fallen below the failsafe threshold
@@ -1103,6 +1110,9 @@ private:
     void update_logging10(void);
     void update_logging25(void);
     void update_control_mode(void);
+    bool roll_pid_gpio_setup(void);
+    bool roll_pid_gpio_high(void);
+    void roll_pid_gpio_update(void);
     void update_fly_forward(void);
     void update_flight_stage();
     void set_flight_stage(AP_FixedWing::FlightStage fs);

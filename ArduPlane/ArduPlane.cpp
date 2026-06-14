@@ -499,6 +499,8 @@ void Plane::update_GPS_10Hz(void)
  */
 void Plane::update_control_mode(void)
 {
+    roll_pid_gpio_update();
+
     if ((control_mode != &mode_auto) && (control_mode != &mode_takeoff)) {
         // hold_course is only used in takeoff and landing
         steer_state.hold_course_cd = -1;
@@ -513,6 +515,73 @@ void Plane::update_control_mode(void)
     control_mode->update();
 }
 
+bool Plane::roll_pid_gpio_setup(void)
+{
+    // SpeedyBeeF405WING/Wing Mini SERVO9/PWM9 is GPIO(58) when SERVO9_FUNCTION=-1.
+    static constexpr uint8_t roll_pid_mode_pin = 58;
+
+    if (roll_pid_gpio.initialized) {
+        return true;
+    }
+
+    if (!hal.gpio->valid_pin(roll_pid_mode_pin)) {
+        return false;
+    }
+
+    hal.gpio->pinMode(roll_pid_mode_pin, HAL_GPIO_INPUT);
+    hal.gpio->write(roll_pid_mode_pin, 1);
+    roll_pid_gpio.last_high = hal.gpio->read(roll_pid_mode_pin) != 0;
+    roll_pid_gpio.auto_pending = false;
+    roll_pid_gpio.high_start_ms = 0;
+    roll_pid_gpio.initialized = true;
+    return true;
+}
+
+bool Plane::roll_pid_gpio_high(void)
+{
+    // SpeedyBeeF405WING/Wing Mini SERVO9/PWM9 is GPIO(58) when SERVO9_FUNCTION=-1.
+    static constexpr uint8_t roll_pid_mode_pin = 58;
+
+    if (!roll_pid_gpio_setup()) {
+        return false;
+    }
+    return hal.gpio->read(roll_pid_mode_pin) != 0;
+}
+
+void Plane::roll_pid_gpio_update(void)
+{
+    if (!roll_pid_gpio_setup()) {
+        return;
+    }
+
+    const uint32_t now = millis();
+    const bool high = roll_pid_gpio_high();
+
+    if (!high) {
+        roll_pid_gpio.auto_pending = false;
+        if (control_mode != &mode_roll_pid) {
+            set_mode(mode_roll_pid, ModeReason::AUX_FUNCTION);
+        }
+    } else if (!roll_pid_gpio.last_high) {
+        roll_pid_gpio.auto_pending = true;
+        roll_pid_gpio.high_start_ms = now;
+    }
+
+    if (high && roll_pid_gpio.auto_pending) {
+        const float delay_s = constrain_float(g2.roll_pid_auto_delay.get(), 0.0f, 60.0f);
+        const uint32_t delay_ms = uint32_t(delay_s * 1000.0f);
+        if (now - roll_pid_gpio.high_start_ms >= delay_ms) {
+            roll_pid_gpio.auto_pending = false;
+            const bool in_auto = (control_mode == &mode_auto) ||
+                                 set_mode(mode_auto, ModeReason::AUX_FUNCTION);
+            if (in_auto && !arming.is_armed()) {
+                arming.arm(AP_Arming::Method::AUXSWITCH);
+            }
+        }
+    }
+
+    roll_pid_gpio.last_high = high;
+}
 
 void Plane::update_fly_forward(void)
 {

@@ -586,6 +586,7 @@ public:
     AP_Float        roll_d;
     AP_Int16        surf1_mid;
     AP_Int16        surf2_mid;
+    AP_Float        roll_pid_auto_delay;
 
     // just to make compilation easier when all things are compiled out...
     uint8_t unused_integer;
