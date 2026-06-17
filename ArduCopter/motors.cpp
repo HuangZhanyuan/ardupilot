@@ -130,9 +130,23 @@ void Copter::reset_s10_pitch_tracking_controller()
     s10_pitch_track.last_error_valid = false;
 }
 
+Matrix3f Copter::get_s9s10_compensated_rotation_body_to_ned() const
+{
+    Matrix3f compensated_rot = ahrs.get_rotation_body_to_ned();
+    Matrix3f rocket_to_fc_mount_rot;
+
+    // The FC is mounted with an additional +45 deg rotation about the body
+    // longitudinal axis. Rotate the current attitude back into the original
+    // installation frame before extracting the custom pitch/roll tracking angles.
+    rocket_to_fc_mount_rot.from_euler(0.0f, 0.0f, radians(45.0f));
+    compensated_rot = compensated_rot * rocket_to_fc_mount_rot;
+
+    return compensated_rot;
+}
+
 float Copter::get_s10_wrapped_pitch_deg() const
 {
-    const Matrix3f &rot = ahrs.get_rotation_body_to_ned();
+    const Matrix3f rot = get_s9s10_compensated_rotation_body_to_ned();
     // Use the 3-1-2 decomposition pitch term so the commanded pitch can
     // continue past 90 degrees without the standard Euler pitch folding back.
     return wrap_360(degrees(rot.to_euler312().y));
@@ -223,7 +237,10 @@ void Copter::reset_s9_roll_tracking_controller()
 
 float Copter::get_s9_wrapped_roll_deg() const
 {
-    return wrap_360(degrees(ahrs.get_roll()));
+    const Matrix3f rot = get_s9s10_compensated_rotation_body_to_ned();
+    float roll_rad = 0.0f;
+    rot.to_euler(&roll_rad, nullptr, nullptr);
+    return wrap_360(degrees(roll_rad));
 }
 
 void Copter::apply_s9_roll_tracking_output()

@@ -957,6 +957,7 @@ private:
     bool read_s11_gpio(bool &high);
     void update_s11_auto();
     void apply_s11_servo_outputs();
+    Matrix3f get_s9s10_compensated_rotation_body_to_ned() const;
     bool s10_pitch_tracking_active(uint32_t now_ms) const;
     void reset_s10_pitch_tracking_controller();
     float get_s10_wrapped_pitch_deg() const;
