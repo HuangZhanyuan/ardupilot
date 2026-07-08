@@ -532,7 +532,9 @@ bool Plane::roll_pid_gpio_setup(void)
     hal.gpio->write(roll_pid_mode_pin, 1);
     roll_pid_gpio.last_high = hal.gpio->read(roll_pid_mode_pin) != 0;
     roll_pid_gpio.auto_pending = false;
+    roll_pid_gpio.full_throttle_active = false;
     roll_pid_gpio.high_start_ms = 0;
+    roll_pid_gpio.full_throttle_start_ms = 0;
     roll_pid_gpio.initialized = true;
     return true;
 }
@@ -559,7 +561,19 @@ void Plane::roll_pid_gpio_update(void)
 
     if (!high) {
         roll_pid_gpio.auto_pending = false;
+        roll_pid_gpio.full_throttle_active = false;
         if (control_mode != &mode_roll_pid) {
+            set_mode(mode_roll_pid, ModeReason::AUX_FUNCTION);
+        }
+        roll_pid_gpio.last_high = high;
+        return;
+    }
+
+    if (roll_pid_gpio.full_throttle_active) {
+        if (now - roll_pid_gpio.full_throttle_start_ms >= 3000U) {
+            roll_pid_gpio.full_throttle_active = false;
+            rc().reset_mode_switch();
+        } else if (control_mode != &mode_roll_pid) {
             set_mode(mode_roll_pid, ModeReason::AUX_FUNCTION);
         }
     } else if (!roll_pid_gpio.last_high) {
@@ -572,15 +586,26 @@ void Plane::roll_pid_gpio_update(void)
         const uint32_t delay_ms = uint32_t(delay_s * 1000.0f);
         if (now - roll_pid_gpio.high_start_ms >= delay_ms) {
             roll_pid_gpio.auto_pending = false;
-            const bool in_auto = (control_mode == &mode_auto) ||
-                                 set_mode(mode_auto, ModeReason::AUX_FUNCTION);
-            if (in_auto && !arming.is_armed()) {
+            hal.rcout->force_safety_off();
+            if (!arming.is_armed()) {
                 arming.arm(AP_Arming::Method::AUXSWITCH);
+            }
+            if (arming.is_armed()) {
+                roll_pid_gpio.full_throttle_active = true;
+                roll_pid_gpio.full_throttle_start_ms = now;
+                if (control_mode != &mode_roll_pid) {
+                    set_mode(mode_roll_pid, ModeReason::AUX_FUNCTION);
+                }
             }
         }
     }
 
     roll_pid_gpio.last_high = high;
+}
+
+bool Plane::roll_pid_full_throttle_active(void) const
+{
+    return roll_pid_gpio.full_throttle_active;
 }
 
 void Plane::update_fly_forward(void)

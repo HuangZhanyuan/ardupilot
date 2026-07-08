@@ -914,6 +914,12 @@ void Plane::set_servos(void)
         }
     }
 
+    if (roll_pid_full_throttle_active() && arming.is_armed_and_safety_off()) {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 100.0f);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, 100.0f);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, 100.0f);
+    }
+
 #if AP_ICENGINE_ENABLED
     float override_pct = SRV_Channels::get_output_scaled(SRV_Channel::k_throttle);
     if (g2.ice_control.throttle_override(override_pct, base_throttle)) {

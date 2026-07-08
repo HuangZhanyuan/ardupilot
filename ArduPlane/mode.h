@@ -599,10 +599,15 @@ private:
 
     void update_pid();
     void reset_pid();
+    float get_pid_correction(float error_deg, float dt, float kp, float ki, float kd,
+                             float &integrator, float &last_error, bool &have_last_error);
 
-    float integrator_deg_s;
-    float last_error_deg;
-    bool have_last_error;
+    float surface1_integrator_deg_s;
+    float surface2_integrator_deg_s;
+    float surface1_last_error_deg;
+    float surface2_last_error_deg;
+    bool surface1_have_last_error;
+    bool surface2_have_last_error;
     uint16_t surface1_pwm;
     uint16_t surface2_pwm;
 };

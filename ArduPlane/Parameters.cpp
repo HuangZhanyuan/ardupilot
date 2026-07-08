@@ -1313,21 +1313,21 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("ROLL_TGT", 39, ParametersG2, roll_tgt, 0.0f),
 
     // @Param: ROLL_P
-    // @DisplayName: Roll PID proportional gain
-    // @Description: Proportional gain for ROLL_PID mode. Units are PWM microseconds per degree of roll error.
-    // @User: Standard
+    // @DisplayName: Legacy shared roll PID proportional gain
+    // @Description: Legacy shared proportional gain for ROLL_PID mode. Used as a fallback for an output only when that output's SURF*_P/I/D gains are all zero.
+    // @User: Advanced
     AP_GROUPINFO("ROLL_P", 40, ParametersG2, roll_p, 0.0f),
 
     // @Param: ROLL_I
-    // @DisplayName: Roll PID integral gain
-    // @Description: Integral gain for ROLL_PID mode. Units are PWM microseconds per degree-second of accumulated roll error.
-    // @User: Standard
+    // @DisplayName: Legacy shared roll PID integral gain
+    // @Description: Legacy shared integral gain for ROLL_PID mode. Used as a fallback for an output only when that output's SURF*_P/I/D gains are all zero.
+    // @User: Advanced
     AP_GROUPINFO("ROLL_I", 41, ParametersG2, roll_i, 0.0f),
 
     // @Param: ROLL_D
-    // @DisplayName: Roll PID derivative gain
-    // @Description: Derivative gain for ROLL_PID mode. Units are PWM microseconds per degree-per-second of roll error rate.
-    // @User: Standard
+    // @DisplayName: Legacy shared roll PID derivative gain
+    // @Description: Legacy shared derivative gain for ROLL_PID mode. Used as a fallback for an output only when that output's SURF*_P/I/D gains are all zero.
+    // @User: Advanced
     AP_GROUPINFO("ROLL_D", 42, ParametersG2, roll_d, 0.0f),
 
     // @Param: SURF1_MID
@@ -1349,13 +1349,49 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("SURF2_MID", 44, ParametersG2, surf2_mid, 1500),
 
     // @Param: RPID_AUTO_DLY
-    // @DisplayName: ROLL_PID auto mode delay
-    // @Description: Delay after SERVO9 GPIO input changes from low to high before switching from ROLL_PID control to AUTO mode.
+    // @DisplayName: ROLL_PID release delay
+    // @Description: Delay after SERVO9 GPIO input changes from low to high before arming and starting the full-throttle release sequence.
     // @Units: s
     // @Range: 0 60
     // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("RPID_AUTO_DLY", 45, ParametersG2, roll_pid_auto_delay, 2.0f),
+
+    // @Param: SURF1_P
+    // @DisplayName: ROLL_PID surface 1 proportional gain
+    // @Description: Proportional gain for SERVO1 output in ROLL_PID mode. Units are PWM microseconds per degree of roll error.
+    // @User: Standard
+    AP_GROUPINFO("SURF1_P", 46, ParametersG2, surf1_p, 0.0f),
+
+    // @Param: SURF1_I
+    // @DisplayName: ROLL_PID surface 1 integral gain
+    // @Description: Integral gain for SERVO1 output in ROLL_PID mode. Units are PWM microseconds per degree-second of accumulated roll error.
+    // @User: Standard
+    AP_GROUPINFO("SURF1_I", 47, ParametersG2, surf1_i, 0.0f),
+
+    // @Param: SURF1_D
+    // @DisplayName: ROLL_PID surface 1 derivative gain
+    // @Description: Derivative gain for SERVO1 output in ROLL_PID mode. Units are PWM microseconds per degree-per-second of roll error rate.
+    // @User: Standard
+    AP_GROUPINFO("SURF1_D", 48, ParametersG2, surf1_d, 0.0f),
+
+    // @Param: SURF2_P
+    // @DisplayName: ROLL_PID surface 2 proportional gain
+    // @Description: Proportional gain for SERVO2 output in ROLL_PID mode. Units are PWM microseconds per degree of roll error.
+    // @User: Standard
+    AP_GROUPINFO("SURF2_P", 49, ParametersG2, surf2_p, 0.0f),
+
+    // @Param: SURF2_I
+    // @DisplayName: ROLL_PID surface 2 integral gain
+    // @Description: Integral gain for SERVO2 output in ROLL_PID mode. Units are PWM microseconds per degree-second of accumulated roll error.
+    // @User: Standard
+    AP_GROUPINFO("SURF2_I", 50, ParametersG2, surf2_i, 0.0f),
+
+    // @Param: SURF2_D
+    // @DisplayName: ROLL_PID surface 2 derivative gain
+    // @Description: Derivative gain for SERVO2 output in ROLL_PID mode. Units are PWM microseconds per degree-per-second of roll error rate.
+    // @User: Standard
+    AP_GROUPINFO("SURF2_D", 51, ParametersG2, surf2_d, 0.0f),
     
     AP_GROUPEND
 };

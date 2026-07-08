@@ -363,7 +363,9 @@ private:
         bool initialized;
         bool last_high;
         bool auto_pending;
+        bool full_throttle_active;
         uint32_t high_start_ms;
+        uint32_t full_throttle_start_ms;
     } roll_pid_gpio;
 
     // Failsafe
@@ -1113,6 +1115,7 @@ private:
     bool roll_pid_gpio_setup(void);
     bool roll_pid_gpio_high(void);
     void roll_pid_gpio_update(void);
+    bool roll_pid_full_throttle_active(void) const;
     void update_fly_forward(void);
     void update_flight_stage();
     void set_flight_stage(AP_FixedWing::FlightStage fs);

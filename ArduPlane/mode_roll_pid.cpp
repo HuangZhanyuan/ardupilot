@@ -38,11 +38,40 @@ void ModeRollPID::apply_servo_outputs() const
 
 void ModeRollPID::reset_pid()
 {
-    integrator_deg_s = 0;
-    last_error_deg = 0;
-    have_last_error = false;
+    surface1_integrator_deg_s = 0;
+    surface2_integrator_deg_s = 0;
+    surface1_last_error_deg = 0;
+    surface2_last_error_deg = 0;
+    surface1_have_last_error = false;
+    surface2_have_last_error = false;
     surface1_pwm = uint16_t(constrain_float(plane.g2.surf1_mid.get(), 800.0f, 2200.0f));
     surface2_pwm = uint16_t(constrain_float(plane.g2.surf2_mid.get(), 800.0f, 2200.0f));
+}
+
+float ModeRollPID::get_pid_correction(float error_deg, float dt, float kp, float ki, float kd,
+                                      float &integrator, float &last_error, bool &have_last_error)
+{
+    if (!have_last_error) {
+        last_error = error_deg;
+        have_last_error = true;
+    }
+
+    integrator += error_deg * dt;
+
+    float i_term = 0;
+    if (is_zero(ki)) {
+        integrator = 0;
+    } else {
+        i_term = constrain_float(ki * integrator, -500.0f, 500.0f);
+        integrator = i_term / ki;
+    }
+
+    const float derivative_deg_s = (error_deg - last_error) / dt;
+    last_error = error_deg;
+
+    return constrain_float((kp * error_deg) + i_term + (kd * derivative_deg_s),
+                           -500.0f,
+                            500.0f);
 }
 
 void ModeRollPID::update_pid()
@@ -56,35 +85,42 @@ void ModeRollPID::update_pid()
     const float actual_deg = ahrs.roll_sensor * 0.01f;
     const float error_deg = wrap_180(target_deg - actual_deg);
 
-    if (!have_last_error) {
-        last_error_deg = error_deg;
-        have_last_error = true;
+    float surface1_p = plane.g2.surf1_p.get();
+    float surface1_i = plane.g2.surf1_i.get();
+    float surface1_d = plane.g2.surf1_d.get();
+    if (is_zero(surface1_p) && is_zero(surface1_i) && is_zero(surface1_d)) {
+        surface1_p = plane.g2.roll_p.get();
+        surface1_i = plane.g2.roll_i.get();
+        surface1_d = plane.g2.roll_d.get();
     }
 
-    const float kp = plane.g2.roll_p.get();
-    const float ki = plane.g2.roll_i.get();
-    const float kd = plane.g2.roll_d.get();
-
-    integrator_deg_s += error_deg * dt;
-
-    float i_term = 0;
-    if (is_zero(ki)) {
-        integrator_deg_s = 0;
-    } else {
-        i_term = constrain_float(ki * integrator_deg_s, -500.0f, 500.0f);
-        integrator_deg_s = i_term / ki;
+    float surface2_p = plane.g2.surf2_p.get();
+    float surface2_i = plane.g2.surf2_i.get();
+    float surface2_d = plane.g2.surf2_d.get();
+    if (is_zero(surface2_p) && is_zero(surface2_i) && is_zero(surface2_d)) {
+        surface2_p = plane.g2.roll_p.get();
+        surface2_i = plane.g2.roll_i.get();
+        surface2_d = plane.g2.roll_d.get();
     }
 
-    const float derivative_deg_s = (error_deg - last_error_deg) / dt;
-    last_error_deg = error_deg;
-
-    const float correction_pwm = constrain_float((kp * error_deg) + i_term + (kd * derivative_deg_s),
-                                                 -500.0f,
-                                                  500.0f);
+    const float surface1_correction_pwm = get_pid_correction(error_deg, dt,
+                                                             surface1_p,
+                                                             surface1_i,
+                                                             surface1_d,
+                                                             surface1_integrator_deg_s,
+                                                             surface1_last_error_deg,
+                                                             surface1_have_last_error);
+    const float surface2_correction_pwm = get_pid_correction(error_deg, dt,
+                                                             surface2_p,
+                                                             surface2_i,
+                                                             surface2_d,
+                                                             surface2_integrator_deg_s,
+                                                             surface2_last_error_deg,
+                                                             surface2_have_last_error);
 
     const float mid1 = constrain_float(plane.g2.surf1_mid.get(), 800.0f, 2200.0f);
     const float mid2 = constrain_float(plane.g2.surf2_mid.get(), 800.0f, 2200.0f);
 
-    surface1_pwm = uint16_t(constrain_float(mid1 + correction_pwm, 800.0f, 2200.0f) + 0.5f);
-    surface2_pwm = uint16_t(constrain_float(mid2 - correction_pwm, 800.0f, 2200.0f) + 0.5f);
+    surface1_pwm = uint16_t(constrain_float(mid1 + surface1_correction_pwm, 800.0f, 2200.0f) + 0.5f);
+    surface2_pwm = uint16_t(constrain_float(mid2 - surface2_correction_pwm, 800.0f, 2200.0f) + 0.5f);
 }
